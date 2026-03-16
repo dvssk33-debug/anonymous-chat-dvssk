@@ -146,16 +146,30 @@ const db=getFirestore(app);
 let currentId=null;
 
 /* Удаление старых */
-(async()=>{
-try{
-let snaps=await getDocs(collection(db,"chats"));
-let now=Date.now();
-snaps.forEach(async d=>{
-if(now-d.data().lastTime>1000*60*60*24*21){
-await deleteDoc(doc(db,"chats",d.id));
-}
-});
-}catch(e){console.warn("Cleanup:",e)}
+/* Оптимизированная очистка (Клиентская) */
+(async ()=>{
+  try {
+    const snaps = await getDocs(collection(db, "chats"));
+    const now = Date.now();
+    const TWO_WEEKS_MS = 1000 * 60 * 60 * 24 * 14; // 14 дней
+    let count = 0;
+
+    snaps.forEach(async d => {
+      const data = d.data();
+      // Защита: если нет даты, считаем чат старым и удаляем
+      const lastTime = data.lastTime || 0; 
+      
+      if ((now - lastTime) > TWO_WEEKS_MS) {
+        await deleteDoc(doc(db, "chats", d.id));
+        count++;
+        console.log(`[Удалён] Чат ${d.id} (старый: ${Math.floor((now-lastTime)/86400000)} дн.)`);
+      }
+    });
+    
+    console.log(`[Очистка завершена] Удалено чатов: ${count}`);
+  } catch(e) {
+    console.error("[Ошибка очистки]", e);
+  }
 })();
 
 /* Список */

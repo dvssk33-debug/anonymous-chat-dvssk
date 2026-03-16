@@ -1,71 +1,78 @@
 <!DOCTYPE html>
-<html>
+<html lang="ru">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Анонимный чат</title>
-
 <style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 body{
 margin:0;
-font-family:Arial;
-background:linear-gradient(180deg,#e3f2fd,#ffffff);
+font-family:Arial,sans-serif;
+background:linear-gradient(180deg,#e3f2fd,#fff);
 display:flex;
 justify-content:center;
 align-items:center;
-height:100vh;
+min-height:100vh;
+min-height:100dvh;
+padding:16px;
 }
-
 .box{
-width:95%;
-max-width:500px;
-background:white;
-padding:25px;
+width:100%;
+max-width:480px;
+background:#fff;
+padding:24px 20px;
 border-radius:20px;
-box-shadow:0 15px 40px rgba(0,0,0,0.15);
+box-shadow:0 10px 30px rgba(0,0,0,.12);
 text-align:center;
 }
-
+.box h2{margin:0 0 8px;font-size:20px}
+.box p{margin:0 0 16px;color:#555;font-size:14px}
 textarea{
 width:100%;
-height:140px;
-border-radius:12px;
+height:120px;
+border-radius:14px;
 border:1px solid #ccc;
-padding:10px;
+padding:12px 14px;
 font-size:16px;
+resize:none;
+outline:none;
+transition:border .15s;
 }
-
+textarea:focus{border-color:#1976d2}
 button{
-margin-top:15px;
+margin-top:16px;
 width:100%;
-padding:15px;
+padding:14px;
 border:none;
-border-radius:12px;
+border-radius:14px;
 background:#1976d2;
-color:white;
-font-size:18px;
+color:#fff;
+font-size:16px;
+font-weight:500;
+cursor:pointer;
+min-height:48px;
+}
+button:active{opacity:.9}
+.note{font-size:12px;color:#777;margin-top:12px;line-height:1.4}
+@media (max-width:360px){
+.box{padding:20px 16px;border-radius:16px}
+textarea{height:110px;font-size:16px}
 }
 </style>
 </head>
-
 <body>
-
 <div class="box">
 <h2>Анонимный чат</h2>
 <p>Опишите проблему — специалист ответит</p>
-
-<textarea id="msg"></textarea>
-
+<textarea id="msg" placeholder="Ваше сообщение..."></textarea>
 <button onclick="startChat()">Начать чат</button>
-
-<p style="font-size:13px;color:#666;margin-top:10px">
-Сохраните ссылку чтобы вернуться к разговору
-</p>
+<p class="note">Сохраните ссылку, чтобы вернуться к разговору</p>
 </div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
-import { getFirestore, doc, setDoc }
-from "https://www.gstatic.com/firebasejs/12.10.0/firebase-firestore.js";
+import { getFirestore, doc, setDoc } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-firestore.js";
 
 const firebaseConfig={
 apiKey:"AIzaSyCpkN5diNxAz6sTNT2TxnlTtqxSljRxHy4",
@@ -77,18 +84,17 @@ const app=initializeApp(firebaseConfig);
 const db=getFirestore(app);
 
 window.startChat=async function(){
-let text=msg.value;
+const input=document.getElementById('msg');
+let text=input.value.trim();
+if(!text){input.focus();return;}
 let id=Math.random().toString(36).substr(2,9);
-
 await setDoc(doc(db,"chats",id),{
 messages:[{from:"user",text:text}],
 lastMessage:text,
 lastTime:Date.now()
 });
-
 location.href="chat.html?id="+id;
 }
 </script>
-
 </body>
 </html>

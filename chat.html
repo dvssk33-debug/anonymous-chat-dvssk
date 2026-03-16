@@ -3,26 +3,71 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Чат</title>
+<title>Панель</title>
 <style>
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 body{
-margin:0;font-family:Arial,sans-serif;
-background:#e3f2fd;
-min-height:100vh;min-height:100dvh;
-display:flex;justify-content:center;
+margin:0;
+font-family:Arial,sans-serif;
+height:100vh;
+height:100dvh;
+display:flex;
+background:#fff;
+overflow:hidden;
 }
-.wrapper{
-width:100%;max-width:600px;height:100dvh;
-background:#fff;display:flex;flex-direction:column;
+/* Кнопка меню — ПРАВЫЙ ВЕРХНИЙ УГОЛ */
+#menuBtn{
+display:none;
+position:fixed;
+top:12px;
+right:12px;
+z-index:110;
+width:44px;
+height:44px;
+border:none;
+border-radius:50%;
+background:#1976d2;
+color:#fff;
+font-size:20px;
+cursor:pointer;
+box-shadow:0 2px 8px rgba(0,0,0,.2);
 }
-.banner{
-background:#fff3cd;padding:10px 12px;text-align:center;
-font-size:13px;color:#856404;line-height:1.4;
+/* Оверлей */
+#overlay{
+position:fixed;inset:0;background:rgba(0,0,0,.4);
+z-index:90;display:none;
+}
+#overlay.active{display:block}
+/* Левая панель — список чатов */
+#left{
+width:280px;max-width:85%;
+border-right:1px solid #ccc;
+overflow:auto;background:#f5f7fb;
+position:fixed;left:0;top:0;bottom:0;
+z-index:100;transform:translateX(-100%);
+transition:transform .25s ease;padding:8px 0;
+}
+#left.active{transform:translateX(0)}
+.chatItem{
+padding:14px 16px;border-bottom:1px solid #ddd;
+cursor:pointer;background:#fff;transition:background .15s;
+}
+.chatItem:active{background:#e8eaf6}
+.chatItem small{color:#666;font-size:13px;display:block;margin-top:4px}
+/* Правая часть */
+#right{
+flex:1;
+display:flex;
+flex-direction:column;
+width:100%;
+padding-top:56px; /* отступ чтобы кнопка не перекрывала контент */
 }
 #chat{
-flex:1;overflow-y:auto;padding:12px;
-background:#f5f7fb;padding-bottom:80px;
+flex:1;
+overflow-y:auto;
+padding:12px;
+background:#fff;
+padding-bottom:80px;
 }
 /* Сообщения */
 .message{margin:8px 0;display:flex;flex-direction:column;max-width:85%}
@@ -39,7 +84,6 @@ font-size:15px;line-height:1.4;word-wrap:break-word;
 position:fixed;bottom:0;left:0;right:0;
 display:flex;gap:8px;padding:10px 12px;
 background:#fff;border-top:1px solid #ccc;z-index:80;
-max-width:600px;margin:0 auto;width:100%;
 }
 #sendBox input{
 flex:1;padding:14px 16px;border:1px solid #ddd;
@@ -52,29 +96,44 @@ color:#fff;border:none;border-radius:24px;
 font-size:15px;font-weight:500;cursor:pointer;min-height:44px;
 }
 #sendBox button:active{opacity:.9}
-/* Мобильные правки */
-@media (max-width:640px){
+/* Мобильные стили */
+@media (max-width:768px){
+#menuBtn{display:block}
+#left{width:85%;max-width:320px;box-shadow:2px 0 12px rgba(0,0,0,.15)}
+body.menu-open{overflow:hidden}
+.chatItem{padding:16px}
 .message span{padding:12px 16px;font-size:16px}
-#sendBox{padding:8px 10px}
+#right{padding-top:60px} /* чуть больше отступ на мобильных */
 }
 ::-webkit-scrollbar{width:6px}
 ::-webkit-scrollbar-thumb{background:#bbb;border-radius:3px}
 </style>
 </head>
 <body>
-<div class="wrapper">
-<div class="banner">Сохраните ссылку, чтобы вернуться в чат</div>
-<div id="chat"></div>
+
+<!-- Кнопка меню — справа -->
+<button id="menuBtn" onclick="toggleMenu()">☰</button>
+<div id="overlay" onclick="toggleMenu()"></div>
+
+<!-- Список чатов -->
+<div id="left"></div>
+
+<!-- Чат -->
+<div id="right">
+<div id="chat">Выберите чат</div>
+</div>
+
+<!-- Поле ввода -->
 <div id="sendBox">
 <input id="msg" type="text" placeholder="Сообщение..." autocomplete="off">
 <button onclick="send()">Отпр.</button>
-</div>
 </div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
 import {
-getFirestore,doc,onSnapshot,updateDoc,getDoc
+getFirestore,collection,query,orderBy,onSnapshot,
+doc,updateDoc,getDoc,getDocs,deleteDoc
 } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-firestore.js";
 
 const firebaseConfig={
@@ -84,14 +143,41 @@ projectId:"dvsskpsy"
 };
 const app=initializeApp(firebaseConfig);
 const db=getFirestore(app);
-const id=new URLSearchParams(location.search).get("id");
-const ref=doc(db,"chats",id);
+let currentId=null;
 
+/* Удаление старых */
+(async()=>{
+try{
+let snaps=await getDocs(collection(db,"chats"));
+let now=Date.now();
+snaps.forEach(async d=>{
+if(now-d.data().lastTime>1000*60*60*24*21){
+await deleteDoc(doc(db,"chats",d.id));
+}
+});
+}catch(e){console.warn("Cleanup:",e)}
+})();
+
+/* Список */
+const q=query(collection(db,"chats"),orderBy("lastTime","desc"));
+onSnapshot(q,(snap)=>{
+let html="";
+snap.forEach(d=>{
+html+=`<div class="chatItem" onclick="openChat('${d.id}')">
+Чат ${d.id}<br><small>${d.data().lastMessage||""}</small></div>`;
+});
+document.getElementById('left').innerHTML=html;
+});
+
+/* Открытие */
+window.openChat=function(id){
+currentId=id;
+const ref=doc(db,"chats",id);
 onSnapshot(ref,(snap)=>{
 let data=snap.data();if(!data)return;
 let html="";
 (data.messages||[]).forEach(m=>{
-let side=m.from==="user"?"right":"left";
+let side=m.from==="teacher"?"right":"left";
 html+=`<div class="message ${side}"><span>${m.text}</span></div>`;
 });
 document.getElementById('chat').innerHTML=html;
@@ -99,17 +185,42 @@ setTimeout(()=>{
 document.getElementById('chat').scrollTop=document.getElementById('chat').scrollHeight;
 },50);
 });
+};
 
+/* Отправка */
 window.send=async function(){
+if(!currentId)return;
 const input=document.getElementById('msg');
 let text=input.value.trim();if(!text)return;
+let ref=doc(db,"chats",currentId);
 let snap=await getDoc(ref);
 let data=snap.data();
 data.messages=data.messages||[];
-data.messages.push({from:"user",text:text});
+data.messages.push({from:"teacher",text:text});
 await updateDoc(ref,{messages:data.messages,lastMessage:text,lastTime:Date.now()});
 input.value="";input.focus();
 };
+
+/* Меню */
+window.toggleMenu=function(){
+document.getElementById('left').classList.toggle('active');
+document.getElementById('overlay').classList.toggle('active');
+document.body.classList.toggle('menu-open');
+};
+/* Автозакрытие на мобильных */
+const _origOpenChat=window.openChat;
+window.openChat=function(id){
+if(window.innerWidth<=768)toggleMenu();
+_origOpenChat(id);
+};
+/* Закрытие по Escape */
+document.addEventListener('keydown',(e)=>{
+if(e.key==='Escape'){
+document.getElementById('left').classList.remove('active');
+document.getElementById('overlay').classList.remove('active');
+document.body.classList.remove('menu-open');
+}
+});
 </script>
 </body>
 </html>

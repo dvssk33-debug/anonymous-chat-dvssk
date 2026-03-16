@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Анонимный чат</title>
+<title>Анонимный чат ДВССК</title>
 
 <style>
 body{
@@ -16,8 +16,8 @@ height:100vh;
 }
 
 .box{
-width:95%;
-max-width:500px;
+width:90%;
+max-width:380px;
 background:white;
 padding:25px;
 border-radius:20px;
@@ -27,22 +27,25 @@ text-align:center;
 
 textarea{
 width:100%;
-height:140px;
+height:90px;
+border:none;
+background:#f1f3f6;
 border-radius:12px;
-border:1px solid #ccc;
-padding:10px;
-font-size:16px;
+padding:12px;
+margin-top:15px;
+font-size:14px;
+outline:none;
 }
 
 button{
 margin-top:15px;
 width:100%;
-padding:15px;
 border:none;
-border-radius:12px;
 background:#1976d2;
 color:white;
-font-size:18px;
+padding:12px;
+border-radius:12px;
+font-size:15px;
 }
 </style>
 </head>
@@ -50,45 +53,48 @@ font-size:18px;
 <body>
 
 <div class="box">
-<h2>Анонимный чат</h2>
-<p>Опишите проблему — специалист ответит</p>
-
-<textarea id="msg"></textarea>
-
-<button onclick="startChat()">Начать чат</button>
-
-<p style="font-size:13px;color:#666;margin-top:10px">
-Сохраните ссылку чтобы вернуться к разговору
+<h2>Анонимный чат ДВССК</h2>
+<p style="font-size:13px;color:gray">
+Специалисты помогут вам конфиденциально 🤍
 </p>
+
+<textarea id="text" placeholder="Опишите ситуацию..."></textarea>
+<button onclick="start()">Начать чат</button>
 </div>
 
 <script type="module">
+
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
 import { getFirestore, doc, setDoc }
 from "https://www.gstatic.com/firebasejs/12.10.0/firebase-firestore.js";
 
-const firebaseConfig={
-apiKey:"AIzaSyCpkN5diNxAz6sTNT2TxnlTtqxSljRxHy4",
+const firebaseConfig = {
+apiKey:"ТВОЙ_API",
 authDomain:"dvsskpsy.firebaseapp.com",
 projectId:"dvsskpsy"
 };
 
-const app=initializeApp(firebaseConfig);
-const db=getFirestore(app);
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
 
-window.startChat=async function(){
-let text=msg.value;
-let id=Math.random().toString(36).substr(2,9);
+window.start = async function(){
+
+let id = Math.random().toString(36).substr(2,9);
 
 await setDoc(doc(db,"chats",id),{
-messages:[{from:"user",text:text}],
-lastMessage:text,
+messages:[{
+from:"user",
+text:document.getElementById("text").value,
+time:Date.now()
+}],
+lastMessage:document.getElementById("text").value,
 lastTime:Date.now()
 });
 
 location.href="chat.html?id="+id;
-}
-</script>
 
+}
+
+</script>
 </body>
 </html>

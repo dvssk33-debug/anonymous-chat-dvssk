@@ -139,4 +139,145 @@ msg.value="";
 </script>
 
 </body>
+</html><!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Чат</title>
+
+<style>
+body{
+margin:0;
+font-family:Arial;
+background:#e3f2fd;
+display:flex;
+justify-content:center;
+align-items:center;
+height:100vh;
+}
+
+.wrapper{
+width:100%;
+max-width:600px;
+height:100vh;
+background:white;
+display:flex;
+flex-direction:column;
+}
+
+#chat{
+flex:1;
+overflow:auto;
+padding:15px;
+background:#f5f7fb;
+}
+
+#sendBox{
+display:flex;
+border-top:1px solid #ccc;
+}
+
+#sendBox input{
+flex:1;
+padding:15px;
+border:none;
+font-size:16px;
+}
+
+#sendBox button{
+width:120px;
+border:none;
+background:#1976d2;
+color:white;
+}
+</style>
+</head>
+
+<body>
+
+<div class="wrapper">
+
+<div style="background:#fff3cd;padding:8px;text-align:center;font-size:13px">
+Сохраните ссылку чтобы вернуться в чат
+</div>
+
+<div id="chat"></div>
+
+<div id="sendBox">
+<input id="msg">
+<button onclick="send()">Отправить</button>
+</div>
+
+</div>
+
+<script type="module">
+
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
+import {
+getFirestore,doc,onSnapshot,updateDoc,getDoc
+} from "https://www.gstatic.com/firebasejs/12.10.0/firebase-firestore.js";
+
+const firebaseConfig={
+apiKey:"AIzaSyCpkN5diNxAz6sTNT2TxnlTtqxSljRxHy4",
+authDomain:"dvsskpsy.firebaseapp.com",
+projectId:"dvsskpsy"
+};
+
+const app=initializeApp(firebaseConfig);
+const db=getFirestore(app);
+
+const id=new URLSearchParams(location.search).get("id");
+const ref=doc(db,"chats",id);
+
+onSnapshot(ref,(snap)=>{
+let data=snap.data();
+if(!data)return;
+
+let html="";
+data.messages.forEach(m=>{
+let side=m.from==="user"?"right":"left";
+
+html+=`
+<div style="text-align:${side};margin:10px">
+<span style="
+display:inline-block;
+background:${side==="right"?"#1976d2":"#eee"};
+color:${side==="right"?"white":"black"};
+padding:10px 15px;
+border-radius:15px;
+max-width:70%;
+">
+${m.text}
+</span>
+</div>`;
+});
+
+chat.innerHTML=html;
+
+setTimeout(()=>{
+chat.scrollTop=chat.scrollHeight;
+},100);
+
+});
+
+window.send=async function(){
+
+let snap=await getDoc(ref);
+let data=snap.data();
+
+let text=msg.value;
+
+data.messages.push({from:"user",text:text});
+
+await updateDoc(ref,{
+messages:data.messages,
+lastMessage:text,
+lastTime:Date.now()
+});
+
+msg.value="";
+}
+</script>
+
+</body>
 </html>

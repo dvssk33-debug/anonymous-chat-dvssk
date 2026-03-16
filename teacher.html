@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Панель</title>
+
+<style>
+body{margin:0;font-family:Arial;height:100vh;display:flex}
+
+#left{
+width:40%;
+max-width:260px;
+border-right:1px solid #ccc;
+overflow:auto;
+background:#f5f7fb;
+}
+
+#right{
+flex:1;
+display:flex;
+flex-direction:column;
+}
+
+.chatItem{
+padding:10px;
+border-bottom:1px solid #ddd;
+cursor:pointer;
+}
+
+#chat{
+flex:1;
+overflow:auto;
+padding:10px;
+background:white;
+}
+
+#sendBox{
+display:flex;
+border-top:1px solid #ccc;
+}
+
+#sendBox input{
+flex:1;
+padding:15px;
+border:none;
+}
+
+#sendBox button{
+width:100px;
+background:#1976d2;
+color:white;
+border:none;
+}
+</style>
+</head>
+
+<body>
+
+<div id="left"></div>
+
+<div id="right">
+<div id="chat">Выберите чат</div>
+
+<div id="sendBox">
+<input id="msg">
+<button onclick="send()">Отправить</button>
+</div>
+</div>
+
+<script type="module">
+
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
+import {
+getFirestore,collection,query,orderBy,onSnapshot,
+doc,updateDoc,getDoc,getDocs,deleteDoc
+} from "https://www.gstatic.com/firebasejs/12.10.0/firebase-firestore.js";
+
+const firebaseConfig={
+apiKey:"AIzaSyCpkN5diNxAz6sTNT2TxnlTtqxSljRxHy4",
+authDomain:"dvsskpsy.firebaseapp.com",
+projectId:"dvsskpsy"
+};
+
+const app=initializeApp(firebaseConfig);
+const db=getFirestore(app);
+
+let currentId=null;
+
+/* удаление старых */
+(async ()=>{
+let snaps=await getDocs(collection(db,"chats"));
+let now=Date.now();
+snaps.forEach(async d=>{
+if(now-d.data().lastTime>1000*60*60*24*21){
+await deleteDoc(doc(db,"chats",d.id));
+}
+});
+})();
+
+/* список */
+const q=query(collection(db,"chats"),orderBy("lastTime","desc"));
+
+onSnapshot(q,(snap)=>{
+let html="";
+snap.forEach(d=>{
+html+=`
+<div class="chatItem" onclick="openChat('${d.id}')">
+Чат ${d.id}<br>
+<small>${d.data().lastMessage||""}</small>
+</div>`;
+});
+left.innerHTML=html;
+});
+
+/* открыть */
+window.openChat=function(id){
+
+currentId=id;
+const ref=doc(db,"chats",id);
+
+onSnapshot(ref,(snap)=>{
+let data=snap.data();
+if(!data)return;
+
+let html="";
+data.messages.forEach(m=>{
+let side=m.from==="teacher"?"right":"left";
+
+html+=`
+<div style="text-align:${side};margin:10px">
+<span style="
+display:inline-block;
+background:${side==="right"?"#1976d2":"#eee"};
+color:${side==="right"?"white":"black"};
+padding:10px 15px;
+border-radius:15px;
+max-width:70%;
+">
+${m.text}
+</span>
+</div>`;
+});
+
+chat.innerHTML=html;
+
+setTimeout(()=>{
+chat.scrollTop=chat.scrollHeight;
+},100);
+
+});
+}
+
+/* отправка */
+window.send=async function(){
+
+if(!currentId)return;
+
+let ref=doc(db,"chats",currentId);
+let snap=await getDoc(ref);
+let data=snap.data();
+
+let text=msg.value;
+
+data.messages.push({from:"teacher",text:text});
+
+await updateDoc(ref,{
+messages:data.messages,
+lastMessage:text,
+lastTime:Date.now()
+});
+
+msg.value="";
+}
+</script>
+
+</body>
+</html>

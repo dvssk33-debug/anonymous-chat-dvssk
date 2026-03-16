@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Анонимный чат</title>
+
+<style>
+body{
+margin:0;
+font-family:Arial;
+background:linear-gradient(180deg,#e3f2fd,#ffffff);
+display:flex;
+justify-content:center;
+align-items:center;
+height:100vh;
+}
+
+.box{
+width:95%;
+max-width:500px;
+background:white;
+padding:25px;
+border-radius:20px;
+box-shadow:0 15px 40px rgba(0,0,0,0.15);
+text-align:center;
+}
+
+textarea{
+width:100%;
+height:140px;
+border-radius:12px;
+border:1px solid #ccc;
+padding:10px;
+font-size:16px;
+}
+
+button{
+margin-top:15px;
+width:100%;
+padding:15px;
+border:none;
+border-radius:12px;
+background:#1976d2;
+color:white;
+font-size:18px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="box">
+<h2>Анонимный чат</h2>
+<p>Опишите проблему — специалист ответит</p>
+
+<textarea id="msg"></textarea>
+
+<button onclick="startChat()">Начать чат</button>
+
+<p style="font-size:13px;color:#666;margin-top:10px">
+Сохраните ссылку чтобы вернуться к разговору
+</p>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
+import { getFirestore, doc, setDoc }
+from "https://www.gstatic.com/firebasejs/12.10.0/firebase-firestore.js";
+
+const firebaseConfig={
+apiKey:"AIzaSyCpkN5diNxAz6sTNT2TxnlTtqxSljRxHy4",
+authDomain:"dvsskpsy.firebaseapp.com",
+projectId:"dvsskpsy"
+};
+
+const app=initializeApp(firebaseConfig);
+const db=getFirestore(app);
+
+window.startChat=async function(){
+let text=msg.value;
+let id=Math.random().toString(36).substr(2,9);
+
+await setDoc(doc(db,"chats",id),{
+messages:[{from:"user",text:text}],
+lastMessage:text,
+lastTime:Date.now()
+});
+
+location.href="chat.html?id="+id;
+}
+</script>
+
+</body>
+</html>

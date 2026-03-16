@@ -1,76 +1,77 @@
 <!DOCTYPE html>
-<html>
+<html lang="ru">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Чат</title>
-
 <style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 body{
-margin:0;
-font-family:Arial;
+margin:0;font-family:Arial,sans-serif;
 background:#e3f2fd;
-display:flex;
-justify-content:center;
-align-items:center;
-height:100vh;
+min-height:100vh;min-height:100dvh;
+display:flex;justify-content:center;
 }
-
 .wrapper{
-width:100%;
-max-width:600px;
-height:100vh;
-background:white;
-display:flex;
-flex-direction:column;
+width:100%;max-width:600px;height:100dvh;
+background:#fff;display:flex;flex-direction:column;
 }
-
+.banner{
+background:#fff3cd;padding:10px 12px;text-align:center;
+font-size:13px;color:#856404;line-height:1.4;
+}
 #chat{
-flex:1;
-overflow:auto;
-padding:15px;
-background:#f5f7fb;
+flex:1;overflow-y:auto;padding:12px;
+background:#f5f7fb;padding-bottom:80px;
 }
-
+/* Сообщения */
+.message{margin:8px 0;display:flex;flex-direction:column;max-width:85%}
+.message.left{align-self:flex-start}
+.message.right{align-self:flex-end;align-items:flex-end}
+.message span{
+display:inline-block;padding:10px 14px;border-radius:18px;
+font-size:15px;line-height:1.4;word-wrap:break-word;
+}
+.message.left span{background:#eee;color:#000;border-bottom-left-radius:6px}
+.message.right span{background:#1976d2;color:#fff;border-bottom-right-radius:6px}
+/* Поле ввода */
 #sendBox{
-display:flex;
-border-top:1px solid #ccc;
+position:fixed;bottom:0;left:0;right:0;
+display:flex;gap:8px;padding:10px 12px;
+background:#fff;border-top:1px solid #ccc;z-index:80;
+max-width:600px;margin:0 auto;width:100%;
 }
-
 #sendBox input{
-flex:1;
-padding:15px;
-border:none;
-font-size:16px;
+flex:1;padding:14px 16px;border:1px solid #ddd;
+border-radius:24px;font-size:16px;outline:none;
+min-height:44px;
 }
-
 #sendBox button{
-width:120px;
-border:none;
-background:#1976d2;
-color:white;
+min-width:76px;padding:0 16px;background:#1976d2;
+color:#fff;border:none;border-radius:24px;
+font-size:15px;font-weight:500;cursor:pointer;min-height:44px;
 }
+#sendBox button:active{opacity:.9}
+/* Мобильные правки */
+@media (max-width:640px){
+.message span{padding:12px 16px;font-size:16px}
+#sendBox{padding:8px 10px}
+}
+::-webkit-scrollbar{width:6px}
+::-webkit-scrollbar-thumb{background:#bbb;border-radius:3px}
 </style>
 </head>
-
 <body>
-
 <div class="wrapper">
-
-<div style="background:#fff3cd;padding:8px;text-align:center;font-size:13px">
-Сохраните ссылку чтобы вернуться в чат
-</div>
-
+<div class="banner">Сохраните ссылку, чтобы вернуться в чат</div>
 <div id="chat"></div>
-
 <div id="sendBox">
-<input id="msg">
-<button onclick="send()">Отправить</button>
+<input id="msg" type="text" placeholder="Сообщение..." autocomplete="off">
+<button onclick="send()">Отпр.</button>
 </div>
-
 </div>
 
 <script type="module">
-
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
 import {
 getFirestore,doc,onSnapshot,updateDoc,getDoc
@@ -81,203 +82,34 @@ apiKey:"AIzaSyCpkN5diNxAz6sTNT2TxnlTtqxSljRxHy4",
 authDomain:"dvsskpsy.firebaseapp.com",
 projectId:"dvsskpsy"
 };
-
 const app=initializeApp(firebaseConfig);
 const db=getFirestore(app);
-
 const id=new URLSearchParams(location.search).get("id");
 const ref=doc(db,"chats",id);
 
 onSnapshot(ref,(snap)=>{
-let data=snap.data();
-if(!data)return;
-
+let data=snap.data();if(!data)return;
 let html="";
-data.messages.forEach(m=>{
+(data.messages||[]).forEach(m=>{
 let side=m.from==="user"?"right":"left";
-
-html+=`
-<div style="text-align:${side};margin:10px">
-<span style="
-display:inline-block;
-background:${side==="right"?"#1976d2":"#eee"};
-color:${side==="right"?"white":"black"};
-padding:10px 15px;
-border-radius:15px;
-max-width:70%;
-">
-${m.text}
-</span>
-</div>`;
+html+=`<div class="message ${side}"><span>${m.text}</span></div>`;
 });
-
-chat.innerHTML=html;
-
+document.getElementById('chat').innerHTML=html;
 setTimeout(()=>{
-chat.scrollTop=chat.scrollHeight;
-},100);
-
+document.getElementById('chat').scrollTop=document.getElementById('chat').scrollHeight;
+},50);
 });
 
 window.send=async function(){
-
+const input=document.getElementById('msg');
+let text=input.value.trim();if(!text)return;
 let snap=await getDoc(ref);
 let data=snap.data();
-
-let text=msg.value;
-
+data.messages=data.messages||[];
 data.messages.push({from:"user",text:text});
-
-await updateDoc(ref,{
-messages:data.messages,
-lastMessage:text,
-lastTime:Date.now()
-});
-
-msg.value="";
-}
-</script>
-
-</body>
-</html><!DOCTYPE html>
-<html>
-<head>
-<meta charset="UTF-8">
-<title>Чат</title>
-
-<style>
-body{
-margin:0;
-font-family:Arial;
-background:#e3f2fd;
-display:flex;
-justify-content:center;
-align-items:center;
-height:100vh;
-}
-
-.wrapper{
-width:100%;
-max-width:600px;
-height:100vh;
-background:white;
-display:flex;
-flex-direction:column;
-}
-
-#chat{
-flex:1;
-overflow:auto;
-padding:15px;
-background:#f5f7fb;
-}
-
-#sendBox{
-display:flex;
-border-top:1px solid #ccc;
-}
-
-#sendBox input{
-flex:1;
-padding:15px;
-border:none;
-font-size:16px;
-}
-
-#sendBox button{
-width:120px;
-border:none;
-background:#1976d2;
-color:white;
-}
-</style>
-</head>
-
-<body>
-
-<div class="wrapper">
-
-<div style="background:#fff3cd;padding:8px;text-align:center;font-size:13px">
-Сохраните ссылку чтобы вернуться в чат
-</div>
-
-<div id="chat"></div>
-
-<div id="sendBox">
-<input id="msg">
-<button onclick="send()">Отправить</button>
-</div>
-
-</div>
-
-<script type="module">
-
-import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
-import {
-getFirestore,doc,onSnapshot,updateDoc,getDoc
-} from "https://www.gstatic.com/firebasejs/12.10.0/firebase-firestore.js";
-
-const firebaseConfig={
-apiKey:"AIzaSyCpkN5diNxAz6sTNT2TxnlTtqxSljRxHy4",
-authDomain:"dvsskpsy.firebaseapp.com",
-projectId:"dvsskpsy"
+await updateDoc(ref,{messages:data.messages,lastMessage:text,lastTime:Date.now()});
+input.value="";input.focus();
 };
-
-const app=initializeApp(firebaseConfig);
-const db=getFirestore(app);
-
-const id=new URLSearchParams(location.search).get("id");
-const ref=doc(db,"chats",id);
-
-onSnapshot(ref,(snap)=>{
-let data=snap.data();
-if(!data)return;
-
-let html="";
-data.messages.forEach(m=>{
-let side=m.from==="user"?"right":"left";
-
-html+=`
-<div style="text-align:${side};margin:10px">
-<span style="
-display:inline-block;
-background:${side==="right"?"#1976d2":"#eee"};
-color:${side==="right"?"white":"black"};
-padding:10px 15px;
-border-radius:15px;
-max-width:70%;
-">
-${m.text}
-</span>
-</div>`;
-});
-
-chat.innerHTML=html;
-
-setTimeout(()=>{
-chat.scrollTop=chat.scrollHeight;
-},100);
-
-});
-
-window.send=async function(){
-
-let snap=await getDoc(ref);
-let data=snap.data();
-
-let text=msg.value;
-
-data.messages.push({from:"user",text:text});
-
-await updateDoc(ref,{
-messages:data.messages,
-lastMessage:text,
-lastTime:Date.now()
-});
-
-msg.value="";
-}
 </script>
-
 </body>
 </html>
